@@ -24,18 +24,26 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.AbstractSynapseHandler;
 import org.apache.synapse.MessageContext;
 import org.slf4j.MDC;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.UUID;
 
+
 public class MessageIDHandler extends AbstractSynapseHandler {
     private static final Log log = LogFactory.getLog(MessageIDHandler.class);
     private static final String __MESSAGE_ID__ = "__MESSAGE_ID__";
     private static final String LOG_KEY = "messageId";
+    private long RequestIntime = 0;
+    private long RequestOutTime = 0;
+    private long ResponseInTime = 0;
+    private long ResponseOutTime = 0;
+    private long RequestGap = 0;
+    private long ResponseGap = 0;
 
     private DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSSSSS");
-    private Calendar cal =null;
+    private Calendar cal = null;
 
     public boolean handleRequestInFlow(MessageContext messageContext) {
 
@@ -49,8 +57,10 @@ public class MessageIDHandler extends AbstractSynapseHandler {
         MDC.put(LOG_KEY, messageId + " - [REQUEST]");
 
         if (log.isDebugEnabled()) {
-            cal = Calendar.getInstance();
-            log.debug("transactionId=" + messageId +" ,requestInFlowTime=" + dateFormat.format(cal.getTime()));
+            Calendar cal = Calendar.getInstance();
+            RequestIntime = System.currentTimeMillis();
+            log.debug("transactionId=" + messageId + " ,requestInFlowTime=" + dateFormat.format(cal.getTime()));
+
         }
         return true;
     }
@@ -59,8 +69,15 @@ public class MessageIDHandler extends AbstractSynapseHandler {
         String messageId = (String) messageContext.getProperty("__MESSAGE_ID__");
 
         if (log.isDebugEnabled()) {
-            cal = Calendar.getInstance();
+            Calendar cal = Calendar.getInstance();
+            RequestOutTime = System.currentTimeMillis();
             log.debug("transactionId=" + messageId + " ,requestOutFlowTime=" + dateFormat.format(cal.getTime()));
+
+        }
+
+        RequestGap = (RequestOutTime - RequestIntime);
+        if (log.isDebugEnabled()) {
+            log.debug("Request Time Gap in milisecond is " + RequestGap);
         }
         return true;
     }
@@ -70,8 +87,10 @@ public class MessageIDHandler extends AbstractSynapseHandler {
         String responseMessageId = (String) messageContext.getProperty("__MESSAGE_ID__");
 
         if (log.isDebugEnabled()) {
-            cal = Calendar.getInstance();
-            log.debug("transactionId=" + responseMessageId + " ,responseInFlowTime=" + dateFormat.format(cal.getTime()));
+            Calendar cal = Calendar.getInstance();
+            ResponseInTime = System.currentTimeMillis();
+            log.debug("transactionId=" + responseMessageId + " ,responseInFlowTime=" +
+                    dateFormat.format(cal.getTime()));
         }
 
         return true;
@@ -83,9 +102,17 @@ public class MessageIDHandler extends AbstractSynapseHandler {
 
         if (log.isDebugEnabled()) {
             cal = Calendar.getInstance();
-            log.debug("transactionId=" + responseMessageId + " ,responseOutFlowTime=" + dateFormat.format(cal.getTime()));
-        }
 
+            ResponseOutTime = System.currentTimeMillis();
+
+            log.debug("transactionId=" + responseMessageId + " ,responseOutFlowTime=" +
+                    dateFormat.format(cal.getTime()));
+
+        }
+        ResponseGap = (ResponseOutTime - ResponseInTime);
+        if (log.isDebugEnabled()) {
+            log.debug("Response Time Gap in millisecond is" + ResponseGap);
+        }
         return true;
     }
 }
